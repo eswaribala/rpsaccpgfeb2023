@@ -61,5 +61,8 @@ insert into Dental_User(UserName,Password,Roles)values('eswaribala',
        {"roleName":"ROLE_ADMIN"}]');
 
 
-
+create table prescription(Prescription_Id bigserial primary key, Doctor_MobileNo_FK bigint references Doctor(Doctor_MobileNo),
+Patien_MobileNo_FK bigint references Patient(MobileNo),
+Appointment_Id_FK bigserial references Appointment(Appointment_Id),
+Prescription_Info hstore);
 
