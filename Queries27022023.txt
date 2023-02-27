@@ -55,5 +55,11 @@ true,'MDS23858','Prosthodontics');
 
 insert into Appointment(Patient_Mobile_No_FK, Appointment_Day,From_Time, To_Time, Doctor_Mobile_No_FK)values(9952032862,'Monday','2023-02-27 18:00:00.37584+05:30','2023-02-27 19:00:00.37584+05:30'::timestamptz,8056010299);
 
+create table Dental_User(UserName text, Password text, Roles jsonb);
+insert into Dental_User(UserName,Password,Roles)values('eswaribala',
+'Test@123','[{"roleName":"ROLE_USER"},
+       {"roleName":"ROLE_ADMIN"}]');
+
+
 
 
