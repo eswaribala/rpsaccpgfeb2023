@@ -60,9 +60,53 @@ insert into Dental_User(UserName,Password,Roles)values('eswaribala',
 'Test@123','[{"roleName":"ROLE_USER"},
        {"roleName":"ROLE_ADMIN"}]');
 
+Add hstore extension using pgadmin dblevel extension
 
 create table prescription(Prescription_Id bigserial primary key, Doctor_MobileNo_FK bigint references Doctor(Doctor_MobileNo),
 Patien_MobileNo_FK bigint references Patient(MobileNo),
 Appointment_Id_FK bigserial references Appointment(Appointment_Id),
 Prescription_Info hstore);
+
+ALTER TABLE prescription RENAME COLUMN patien_mobileno_fk TO patient_mobileno_fk;
+
+INSERT INTO prescription (Doctor_MobileNo_FK, Patient_MobileNo_FK,Appointment_Id_FK,Prescription_Info)  
+VALUES  
+(       8056010299,9952032862,1,  
+        '"medicine_name" => "Dolo500",  
+       "dosage" => "500",  
+       "duration" => "2 days",  
+       "frequency" => "1-0-1",  
+        "notes" => "Any inconvenience immediately visit"'   
+);
+
+
+create table networkdata(inetaddr inet);
+insert into networkdata (inetaddr) values('192.168.0.0/24');
+insert into networkdata (inetaddr) values('192.168.0.1');
+
+\dx --> show the extensions
+
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+SELECT uuid_generate_v1();
+SELECT uuid_generate_v4();
+
+
+alter table Dental_User add column UserId uuid DEFAULT uuid_generate_v4 ();
+
+
+CREATE SEQUENCE BillSeq START WITH 1000
+INCREMENT BY 1 MAXVALUE 99999999999 CACHE 20 NO CYCLE;
+
+\ds to list the sequences
+or
+SELECT * FROM INFORMATION_SCHEMA.SEQUENCES;
+
+create table bill(Bill_No Numeric DEFAULT NEXTVAL('BillSeq') PRIMARY KEY, Appointment_Id_FK bigserial references Appointment(Appointment_Id),Treatment_Type Text, Cost integer);
+
+INSERT INTO Bill (Appointment_Id_FK,Treatment_Type,Cost) VALUES(1,
+'Implant',45000);
+
+
+
+
 
