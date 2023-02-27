@@ -1,0 +1,59 @@
+CREATE DATABASE dentaldb;
+
+create type gender as enum('Male','Female','Transgender');
+
+create table Patient(MobileNo bigint primary key, FirstName varchar(100), LastName varchar(100), DOB date, Patient_Gender gender, Remember_Me boolean); 
+
+insert into patient(MobileNo, FirstName, LastName, DOB, Patient_Gender, Remember_Me) values(9952032862,'Parameswari','Bala','1970,04,05','Female',
+true);
+insert into patient(MobileNo, FirstName, LastName, DOB, Patient_Gender, Remember_Me) values(8056050425,'Bala','Manick','1965-04-27','Male',
+true);
+
+Alter table patient add column email text;
+Alter table patient add constraint email_unique Unique(email);
+truncate patient;
+
+update patient set email='parameswaribala@gmail.com' where MobileNo=9952032862;
+
+create table Address(Address_Id bigserial, Door_No varchar(5), Street_Name varchar(100), City varchar(100), State varchar(100), Pincode integer, Mobile_No_FK bigint references Patient(MobileNo), constraint Address_Id_Pk primary key(Address_Id));
+
+#List time zones
+select name,abbrev,utc_offset,is_dst from pg_timezone_names;
+#current time zone
+
+show timezone
+
+#all time zones
+select count(*) from pg_timezone_names;
+select * from pg_timezone_names limit 10;
+
+set Timezone='Australia/Darwin'
+show timezone
+
+select now()
+
+SELECT now(),  now()::timestamp, now() AT TIME ZONE '+09',
+   now()::timestamp AT TIME ZONE 'CST';
+
+
+create type day as enum('Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday');
+
+create table Doctor(Doctor_MobileNo bigint primary key, FirstName varchar(100), LastName varchar(100), DOB date, Doctor_Gender gender, Remember_Me boolean, RegNo Text Unique, Specialization Text); 
+
+
+create table Appointment(Appointment_Id bigserial primary key,
+Patient_Mobile_No_FK bigint references Patient(MobileNo), Appointment_Day day, From_Time TIMESTAMP, To_Time TIMESTAMPTZ, Doctor_Mobile_No_FK bigint references Doctor(Doctor_MobileNo));
+
+
+Alter table doctor add constraint doctor_mobile_check check(doctor_mobileno>7000000001 and doctor_mobileno< 9999999999);
+
+
+insert into doctor(Doctor_MobileNo, FirstName, LastName, DOB, Doctor_Gender, Remember_Me, RegNo,Specialization) values(80560102999,'Vignesh','Bala','1995-12-07','Male',
+true,'MDS23858','Prosthodontics');
+
+
+
+insert into Appointment(Patient_Mobile_No_FK, Appointment_Day,From_Time, To_Time, Doctor_Mobile_No_FK)values(9952032862,'Monday','2023-02-27 18:00:00.37584+05:30','2023-02-27 19:00:00.37584+05:30'::timestamptz,8056010299);
+
+
+
