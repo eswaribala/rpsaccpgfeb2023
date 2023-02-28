@@ -56,6 +56,8 @@ true,'MDS23858','Prosthodontics');
 insert into Appointment(Patient_Mobile_No_FK, Appointment_Day,From_Time, To_Time, Doctor_Mobile_No_FK)values(9952032862,'Monday','2023-02-27 18:00:00.37584+05:30','2023-02-27 19:00:00.37584+05:30'::timestamptz,8056010299);
 
 create table Dental_User(UserName text, Password text, Roles jsonb);
+
+
 insert into Dental_User(UserName,Password,Roles)values('eswaribala',
 'Test@123','[{"roleName":"ROLE_USER"},
        {"roleName":"ROLE_ADMIN"}]');
@@ -79,6 +81,16 @@ VALUES
         "notes" => "Any inconvenience immediately visit"'   
 );
 
+
+INSERT INTO prescription (Doctor_MobileNo_FK, Patient_MobileNo_FK,Appointment_Id_FK,Prescription_Info)  
+VALUES  
+(       8056010299,9952032862,1,  
+        '"medicine_name" => "Paracetamol",  
+       "dosage" => "250",  
+       "duration" => "2 days",  
+       "frequency" => "1-0-1",  
+        "notes" => "Any inconvenience immediately visit"'   
+);
 
 create table networkdata(inetaddr inet);
 insert into networkdata (inetaddr) values('192.168.0.0/24');
@@ -106,7 +118,168 @@ create table bill(Bill_No Numeric DEFAULT NEXTVAL('BillSeq') PRIMARY KEY, Appoin
 INSERT INTO Bill (Appointment_Id_FK,Treatment_Type,Cost) VALUES(1,
 'Implant',45000);
 
+INSERT INTO Bill (Appointment_Id_FK,Treatment_Type,Cost) VALUES(1,
+'Metal Cap',15000);
 
 
 
+\c [database name] - connect to a specified database
+\l - list all databases
+\d - display tables, views, and sequences
+\dt - display just tables
+\dv - display views
+\dm - display materialized views
+\di - display indexes
+\dn - display schemas
+\dT - display data types
+Etc.
+\sv [view name] - show a views definition
+\x - toggle expanded display. Useful for tables with a lot of columns being accessed
+Can be toggled on/off or set to auto
+\set - list all internal variables
+\set [Name] [Value] - set new internal variable
+\unset [Name] - delete internal variable
+\cd - change the directory that psql is working in
+\! [Command] - execute shell command
+Ex. \! ls or \! pwd
+\timing - toggles timing on queries
+\echo [message] - print the message to the console
+\copy - copies to a file
+\i [filename] - execute commands from a file
+\o [file] - writes output to file instead of console
+\q - exits psql
+\dt\di to list all tables and then list all indexes with additional technical information on the indexes.
 
+Alternative to synonym
+
+postgres=# \c dentaldb
+You are now connected to database "dentaldb" as user "admin".
+dentaldb=# CREATE SCHEMA dentalschema;
+CREATE SCHEMA
+dentaldb=# CREATE TABLE dentalschema.medicine (MedicineId bigserial,name text);
+CREATE TABLE
+dentaldb=# show search_path ;
+   search_path
+-----------------
+ "$user", public
+(1 row)
+
+
+dentaldb=# SET search_path TO "$user", dentalschema, public;
+SET
+dentaldb=# SELECT count(*) from medicine;
+ count
+-------
+     0
+(1 row)
+
+
+dentaldb=# CREATE VIEW dentalschema.dentalmedicine as SELECT * FROM dentalschema.medicine;
+CREATE VIEW
+dentaldb=#
+CREATE VIEW dentalschema.dentalmedicine_new as SELECT * FROM medicine;
+
+#xml
+
+create table hospital(hospitaldata xml);
+
+insert into hospital(hospitaldata) values(
+'<hospitals>
+ <hospital>
+<name>VEL Dental Clinic</name>
+<address>Chennai</address>
+</hospital>
+<hospital>
+<name>32 Dental Clinic</name>
+<address>Chennai</address>
+</hospital>
+</hospitals>
+');
+
+#composed data type
+create type fullname as (FirstName varchar(50), MiddleName varchar(50), LastName varchar(50));
+create table Donor (DonorId bigserial, DonorName fullname);
+insert into Donor(DonorName) values(ROW('Parameswari','', 'Bala'));
+select (donorname).firstname from donor;
+
+Money-->notes and coins
+USD-> dollar, cents
+UK--> sterling, pounds
+
+create type money as (notes integer, coins integer);
+create table payables(id bigserial, amount money);
+insert into payables(amount)values(ROW(5,50));
+select (amount).coins from payables;
+
+#range types
+
+create table reservations(id serial primary key, room varchar(5) not null,
+dates daterange not null);
+
+insert into reservations(room,dates)values('501',daterange('2023-03-23','2023-03-26'));
+
+select room from reservations where '[2023-03-23,2023-03-26]'::daterange @>dates;
+
+#full text search
+select to_tsvector('I will be travelling to Bangalore on 03/03/2023');
+SELECT to_tsquery('I & will & be & travelling & to & Bangalore & on & 03/03/2023');
+
+#materialized view
+
+create materialized view billview as select BillNo,Treatment_Type,Cost from bill WITH DATA;
+
+copy bill from 'G:\Local disk\Postgres\bill.csv' DELIMITER ',' CSV HEADER;
+
+refresh materialized view billview;
+
+SELECT tablename, indexname, indexdef FROM pg_indexes WHERE schemaname = 'public' ORDER BY tablename,indexname;
+
+create index billindex on bill("Cost");
+
+create index billindex on bill using hash("treatment_type");
+
+create index billpartialindex on bill using brin("cost") where cost>=10000;
+
+#meta data
+SELECT * FROM pg_statio_user_tables WHERE schemaname = 'public';
+
+
+VACUUM (VERBOSE, ANALYZE) bill;
+
+
+#partition
+
+Create Type StatusType As Enum('Project','Resource Pool','Left');
+
+create table employee (Employee_No serial, Name varchar(100), Status StatusType) PARTITION BY LIST(Status);
+CREATE TABLE employee_project PARTITION OF employee FOR VALUES IN ('Project');
+
+CREATE TABLE employee_rp PARTITION OF employee FOR VALUES IN ('Resource Pool');
+
+CREATE TABLE employee_left PARTITION OF employee FOR VALUES IN ('Left');
+
+insert into employee (Name,Status) values('Parameswari','Project');
+
+insert into employee (Name,Status) values('Bala','Project');
+
+
+insert into employee (Name,Status) values('Vignesh','Resource Pool');
+
+
+insert into employee (Name,Status) values('Arun','Left');
+
+
+#range patition
+RANGE Partition
+create table ClinicTransaction(Bill_No Numeric DEFAULT NEXTVAL('BillSeq') PRIMARY KEY, Treatment_Type Text, Cost integer) PARTITION BY RANGE(Bill_No);
+
+CREATE TABLE tran_first PARTITION OF ClinicTransaction FOR VALUES FROM (MINVALUE) TO (250);
+CREATE TABLE tran_two PARTITION OF ClinicTransaction FOR VALUES FROM (251) TO (500);
+CREATE TABLE tran_three PARTITION OF ClinicTransaction FOR VALUES FROM (501) TO (1000);
+CREATE TABLE tran_four PARTITION OF ClinicTransaction FOR VALUES FROM (1001) TO (1500);
+CREATE TABLE tran_five PARTITION OF ClinicTransaction FOR VALUES FROM (1501) TO (2000);
+
+insert into ClinicTransaction(Treatment_Type,Cost) values ('RCT', 3000);
+insert into ClinicTransaction (Treatment_Type,Cost) values ('8th Tooth Extraction', 4000);
+
+insert into ClinicTransaction (Treatment_Type,Cost) values ('Braces', 30000);
