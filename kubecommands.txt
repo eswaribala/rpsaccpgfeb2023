@@ -1,0 +1,16 @@
+kubectl apply -f postgres-pv.yaml
+kubectl get pv
+kubectl get pvc
+kubectl apply -f postgres-deployment.yaml
+kubectl get pods
+kubectl get svc
+kubectl get deploy
+
+kubectl exec -it postgres-556d7f8d95-rgd72 -- psql --u postgres
+
+
+kubectl scale --replicas=1 deployment postgres
+
+
+
+kubectl autoscale deployment postgres --min=1 --max=4 --cpu-percent=20
