@@ -1,0 +1,338 @@
+do
+$$
+DECLARE
+v_patients_count INTEGER;
+BEGIN
+select count(*) INTO v_patients_count from patient;
+raise notice 'The number of patients available: %', v_patients_count;
+END;
+$$;
+=============================================
+do
+$$
+DECLARE
+v_patients_count INTEGER;
+v_mobile_no bigint;
+BEGIN
+select count(*) INTO v_patients_count from patient;
+select Doctor_MobileNo into v_mobile_no from doctor where regno='MDS23858'; 
+raise notice 'The number of patients available and doctor mobile no: % %', v_patients_count,v_mobile_no;
+END;
+$$;
+=====================================
+do
+$$
+<<dental_block>>
+DECLARE
+v_patients_count INTEGER;
+v_mobile_no bigint;
+BEGIN
+select count(*) INTO v_patients_count from patient;
+select Doctor_MobileNo into v_mobile_no from doctor where regno='MDS23858'; 
+raise notice 'The number of patients available and doctor mobile no: % %', v_patients_count,v_mobile_no;
+END dental_block $$;
+============================
+do
+$$
+<<outer_block>>
+DECLARE
+v_counter INTEGER := 1000;
+BEGIN
+v_counter := v_counter + 1;
+raise notice 'The counter value is % ', v_counter;
+<<inner_block1>>
+declare
+v_counter integer := 5000;
+begin
+v_counter := v_counter + 1;
+raise notice 'Inner Block 1 the counter value is % ', inner_block1.v_counter;
+raise notice 'Outer Block the counter value is % ', outer_block.v_counter;
+end inner_block1;
+<<inner_block2>>
+declare
+v_counter integer := 10000;
+begin
+v_counter := v_counter + 1;
+raise notice 'Inner Block 2 the counter value is % ', inner_block2.v_counter;
+raise notice 'Outer Block the counter value is % ', outer_block.v_counter;
+end inner_block2;
+
+END outer_block $$;
+===========================================
+do
+$$
+DECLARE
+v_firstname doctor.firstname%type;
+v_regno doctor.regno%type;
+v_specialization doctor.specialization%type;
+BEGIN
+select d.firstname,d.regno,d.specialization into v_firstname,v_regno,v_specialization from doctor d where d.doctor_mobileno=8056010299;
+raise notice 'The Doctor name, regno and speciaization =: % % %', v_firstname,v_regno,v_specialization;
+END;
+$$;
+=============================================
+do
+$$
+DECLARE
+v_doctor doctor%rowtype;
+BEGIN
+select * from doctor d into v_doctor where d.doctor_mobileno=8056010299;
+raise notice 'The Doctor name, regno and speciaization =: % % %', v_doctor.firstname,v_doctor.regno,v_doctor.specialization;
+END;
+$$;
+===========================================
+do
+$$
+DECLARE
+v_row record;
+BEGIN
+select * from doctor d into v_row where d.doctor_mobileno=8056010299;
+raise notice 'The Doctor name, regno and speciaization =: % % %', v_row.firstname,v_row.regno,v_row.specialization;
+select * from patient p INTO v_row where p.mobileno=9952032862;
+raise notice 'The Patient name, dob and gender =: % % %', v_row.firstname,v_row.dob,v_row.patient_gender;
+END;
+$$;
+==================================================
+do
+$$
+DECLARE
+v_row record;
+BEGIN
+for v_row in select * from patient p
+  Loop
+  raise notice 'The Patient name, dob and gender =: % % %', v_row.firstname,v_row.dob,v_row.patient_gender;
+  
+end loop; 
+END;
+$$;
+=======================================================
+do
+$$
+DECLARE
+v_igst constant NUMERIC(4,2):=0.18;
+v_row bill;
+BEGIN
+for v_row in select * from bill b
+  Loop
+  raise notice 'The BillNo = %, Bill Amount with GST = %', v_row.bill_no,v_row.cost+(v_row.cost * v_igst);
+  
+end loop; 
+END;
+$$;
+==================================================
+do $$ 
+begin 
+  raise info 'information message %', now() ;
+  raise log 'log message %', now();
+  raise debug 'debug message %', now();
+  raise warning 'warning message %', now();
+  raise notice 'notice message %', now();
+end $$;
+============================================
+do
+$$
+do
+$$
+DECLARE
+v_email patient.email%type :='bala@gmail.com';
+v_row record;
+BEGIN
+  for v_row in select * from patient
+    loop
+	if v_row.email = v_email THEN
+	     raise exception 'duplicate email: %', v_row.email using hint = 'check the email again';
+    end if; 
+  end loop;       
+  
+
+END;
+$$;
+=============================
+do
+$$
+DECLARE
+v_email patient.email%type :='param@gmail.com';
+v_row record;
+BEGIN
+  select * from patient p into v_row where p.mobileno=9952032862; 
+  raise notice 'email=%', v_row.email;
+  assert v_row.email = 'param@gmail.com', 'Email not Found';
+
+END;
+$$;
+====================================================
+do
+$$
+DECLARE
+v_row record;
+BEGIN
+  for v_row in select * from bill
+    loop
+	if v_row.cost >100 and v_row.cost < 1000 THEN
+	  raise notice 'Medicine cost = % , kindly pay as cash', v_row.cost;
+	elseif v_row.cost >1000 and v_row.cost < 5000 Then
+	  raise notice 'Medicine cost = % , kindly pay using card', v_row.cost;
+	else
+	  raise notice 'Medicine cost = % , kindly pay using card or convert to EMI', v_row.cost;
+	end if;
+	end loop;
+
+END;
+$$;
+================================================
+do
+$$
+DECLARE
+v_row record;
+v_message varchar(100);
+BEGIN
+   for v_row in select *  from bill
+     loop
+          CASE    
+            WHEN v_row.cost  > 500 and v_row.cost  <1000 THEN v_message :='Cash Payable';
+			WHEN v_row.cost  >1000 and v_row.cost  <5000 THEN v_message := 'Card Payable';
+	        WHEN v_row.cost  >5000 THEN v_message := 'Avail EMI';
+			ELSE
+			 v_message='Unknown';
+		  END CASE;
+		  raise notice 'Bill_No = % can pay Bill Amount= % as %',v_row.bill_no,v_row.cost, v_message;
+	 end loop;
+ 		  
+END;
+$$;
+===================================================
+do
+$$
+DECLARE
+v_counter INTEGER := 0;
+v_row  INTEGER :=0;
+v_message varchar(100);
+BEGIN
+   select count(*) into v_counter from bill;
+   while v_row < v_counter 
+     loop
+	   INSERT INTO Bill (Appointment_Id_FK,Treatment_Type,Cost) VALUES(1,'Implant',45000);  	   
+	     raise notice 'v_row = %', v_row;
+		 v_row := v_row + 1;
+	 end loop;
+ 		  
+END;
+$$;
+===================================================
+Create Type BloodType As Enum('A+','A-','B+','B-','AB+','AB-','O+','O-', );
+create table BloodBank(Id bigserial primary key,DonorId_FK bigint references Donor(DonorId),
+bloodcat bloodtype, qty integer, doc date);
+CREATE OR REPLACE PROCEDURE AddBlood
+(  
+    p_Id OUT bloodbank.id%type,  
+    p_donorId bloodbank.donorid_fk%type,  
+    p_bloodcat bloodbank.bloodcat%type,
+    p_qty bloodbank.qty%type,  
+    p_doc bloodbank.doc%type  
+)  
+LANGUAGE plpgsql AS  
+$$  
+BEGIN         
+   INSERT INTO bloodbank (donorid_fk,bloodcat,qty,doc) VALUES   
+    (p_donorid,  
+     p_bloodcat,
+     p_qty,
+     p_doc
+    ) RETURNING Id INTO p_Id;  
+END  
+$$; 
+
+CALL addblood(0,1,'O+',1000,'2023-03-01')  
+==============================================================
+CREATE OR REPLACE PROCEDURE UpdateBlood
+(  
+    p_Id IN bloodbank.id%type,  
+    p_doc OUT bloodbank.doc%type,  
+    p_qty IN OUT bloodbank.qty%type
+)  
+LANGUAGE plpgsql AS  
+$$  
+BEGIN         
+   update bloodbank set qyt=qty+p_qty where id=p_Id RETURNING doc,qty INTO p_doc,p_qty;  
+END  
+$$; 
+
+CALL updateblood(1,null,2000)  
+===========================================
+CREATE OR REPLACE PROCEDURE DeleteBlood
+(  
+    p_Id IN bloodbank.id%type  
+  
+)  
+LANGUAGE plpgsql AS  
+$$  
+BEGIN         
+   delete from bloodbank where Id=p_Id;
+  
+END  
+$$; 
+
+CALL DeleteBlood(2)  
+
+=========================================
+CREATE OR REPLACE PROCEDURE BulkInsertion()
+
+LANGUAGE plpgsql AS  
+$$  
+Declare
+
+v_row record;
+
+BEGIN         
+  create table tempbill(Bill_No Numeric DEFAULT NEXTVAL('BillSeq') PRIMARY KEY, Appointment_Id_FK bigserial references Appointment(Appointment_Id),Treatment_Type Text, Cost integer);
+  copy tempbill from 'G:\Local disk\Postgres\bill.csv' DELIMITER ',' CSV HEADER;
+  for v_row in select * from tempbill
+   loop
+   if v_row.bill_no != 5050 then
+     INSERT INTO TempBill (Appointment_Id_FK,Treatment_Type,Cost) VALUES(1,'Consultation',500);
+   End IF;
+   
+   end loop;
+  
+  drop table tempbill;
+  
+END  
+$$; 
+
+call BulkInsertion()
+==============================
+create function get_totalcost returns int
+language plpgsql
+as
+$$
+declare
+   v_sum integer;
+begin
+   select sum(cost) 
+   into v_sum
+   from bill;  
+   
+   return v_sum;
+end;
+$$;
+
+select  get_totalcost();
+====================================
+DROP FUNCTION get_age(bigint,timestamp with time zone) 
+create or replace function get_age(p_mobileno bigint,p_current_date timestamp with time zone)
+returns text
+language plpgsql
+as $$
+declare 
+	age text;
+begin
+	-- get the age based on patient
+	
+	SELECT age(p_current_date, dob) into age from patient  where mobileno=p_mobileno;
+	-- return the age
+	return age;
+end; $$
+
+
+select get_age(9952032862,now())
+
