@@ -903,8 +903,18 @@ DO
 MERGE INTO top_rated_films t
 USING (SELECT * FROM most_popular_films) v
 ON v.title = t.title
-WHEN NOT MATCHED 
+WHEN NOT MATCHED THEN
   INSERT VALUES(v.title, v.release_year)
-WHEN MATCHED
-  UPDATE SET title = title || v.title;
+WHEN MATCHED THEN
+  UPDATE SET title = t.title || v.title;
+
+
+or
+
+INSERT INTO top_rated_films select * from most_popular_films 
+ON CONFLICT (title) 
+DO 
+   UPDATE SET title = EXCLUDED.title || ';' || top_rated_films.title;
+========================================================================
+
 =============================================================
