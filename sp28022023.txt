@@ -1060,3 +1060,21 @@ CREATE USER MAPPING FOR postgres SERVER testserver OPTIONS (user 'admin', passwo
  select * from pg_user_mapping;
  GRANT USAGE ON FOREIGN SERVER testserver TO admin;
 IMPORT FOREIGN SCHEMA public LIMIT TO (customer) FROM SERVER testserver INTO public;
+============================
+
+create table doctor_bill(name varhchar(100) unique, billno bigint);
+
+
+
+
+INSERT INTO doctor_bill                  
+ select concat (d.firstname,d.lastname),b.billno from appointment a inner join bill b on a.appointmentId=b.appointmentId_fk inner join doctor d on d.mobileno=a.doctor_mobileno_fk
+ 
+ON CONFLICT ON CONSTRAINT doctor_bill_name_key 
+DO NOTHING;
+
+INSERT INTO doctor_bill select concat (d.firstname,d.lastname),b.billno from appointment a inner join bill b on a.appointmentId=b.appointmentId_fk inner join doctor d on d.mobileno=a.doctor_mobileno
+ON CONFLICT (name) 
+DO 
+   UPDATE SET email = EXCLUDED.email || ';' || customers.email;
+
