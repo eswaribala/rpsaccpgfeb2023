@@ -1,0 +1,28 @@
+
+https://clients.cloudclusters.io/applications/d77f5259986b4a38bcce6f6a60fa0695/overview
+
+postgresql-94426-0.cloudclusters.net
+19911
+209.209.40.79
+admin
+postgres
+
+psql -h postgresql-94426-0.cloudclusters.net -d testdb -U admin -p 19911 -W
+
+
+
+
+Connection Information
+Host
+postgresql-113748-0.cloudclusters.net
+Copy   
+Port
+18220
+Copy   
+IP Address
+68.64.164.115
+Copy   
+The SSL encryption for your database connection is enabled by default.
+
+SSL Shell
+psql -h postgresql-113748-0.cloudclusters.net -p 18220 -U admin -d testdb

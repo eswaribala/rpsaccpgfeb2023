@@ -917,4 +917,146 @@ DO
    UPDATE SET title = EXCLUDED.title || ';' || top_rated_films.title;
 ========================================================================
 
-=============================================================
+
+CREATE TABLE bill_audits (
+   id bigserial primary key,
+   treatment_type  varchar(100) NOT NULL,
+   cost int NOT NULL,
+   changed_on Timestamp NOT NULL
+);
+
+
+CREATE OR REPLACE FUNCTION log_treatment_type_changes()
+  RETURNS TRIGGER 
+  LANGUAGE PLPGSQL
+  AS
+$$
+BEGIN
+	IF NEW.treatment_type <> OLD.treatment_type THEN
+		 INSERT INTO bill_audits(treatment_type,cost,changed_on)
+		 VALUES(OLD.treatment_type,OLD.cost,now());
+	END IF;
+
+	RETURN NEW;
+END;
+$$
+
+CREATE TRIGGER bill_update_trigger
+
+  AFTER UPDATE
+
+  ON "bill"
+
+  FOR EACH ROW
+
+  EXECUTE PROCEDURE log_treatment_type_changes();
+
+
+
+UPDATE bill
+SET treatment_type = 'Implant'
+WHERE ID = 5002;
+
+=====================================================
+
+CREATE OR REPLACE FUNCTION update_bill_afterbusiness_hours()
+  RETURNS TRIGGER
+  LANGUAGE PLPGSQL
+  AS
+$$
+BEGIN
+  IF (TO_CHAR(now(),'DAY') IN ('FRIDAY','SATURDAY','SUNDAY')) OR
+     (TO_CHAR(now(),'HH24:MI')  NOT BETWEEN '08:00' AND '14:00') THEN 
+     raise exception 'You may try to insert into bill table only during business hours.';
+  END IF;
+RETURN NEW;
+
+END;
+$$
+
+CREATE or REPLACE TRIGGER bill_update_trigger_after_business_hours
+
+  BEFORE UPDATE
+
+  ON "bill"
+
+  FOR EACH ROW
+
+  EXECUTE PROCEDURE update_bill_afterbusiness_hours();
+
+
+
+UPDATE bill
+SET treatment_type = 'Implant'
+WHERE bill_no = 5002;
+==============================================================================================
+#bench marking
+Create a test database
+
+CREATE DATABASE mydb
+
+Initialise the pgbench db – this will create the sample tables in the db
+
+pgbench -U postgres -p 5555 -i -s 50  mydb
+
+-I initialize the db. Creates a bunch of default tables
+
+-s  scaling option. i.e take the default rows and x 50 or whatever scaling number you require
+
+This step will create 4 tables - which host the test date rows and other metadata
+
+Schema | Name | Type | Owner
+--------+------------------+-------+----------
+public | pgbench_accounts | table | postgres
+public | pgbench_branches | table | postgres
+public | pgbench_history | table | postgres
+public | pgbench_tellers | table | postgres
+
+ 
+
+Establish a baseline
+
+pgbench -U postgres -p 5555 -c 10 -j 2 -t 10000 mydb
+
+-c number of clients
+
+-j 2 number of threads
+
+-t amount of transactions
+
+These values are 10000 transactions per client. So : 10 x 10000 = 100,000 transactions
+========================================
+
+#FDW
+Create EXTENSION :
+    CREATE EXTENSION postgres_fdw;
+Create SERVER :
+    CREATE SERVER server_name FOREIGN DATA WRAPPER postgres_fdw OPTIONS (host 'host_ip', 
+    dbname 'db_name', port 'port_number');
+Create USER MAPPING:
+    CREATE USER MAPPING FOR CURRENT_USER
+    SERVER server_name
+    OPTIONS (user 'user_name', password 'password');
+Create new schema to access schema of server DB:
+   CREATE SCHEMA schema_name;
+Import server schema:
+     IMPORT FOREIGN SCHEMA schema_name_to_import_from_remote_db
+     FROM SERVER server_name
+     INTO schema_name;
+Access any table of server schema:
+    SELECT * FROM schema_name.table_name; 
+
+
+CREATE EXTENSION postgres_fdw;
+
+ CREATE SERVER testserver FOREIGN DATA WRAPPER postgres_fdw OPTIONS (host 'postgresql-94426-0.cloudclusters.net', 
+    dbname 'testdb', port '18220');
+
+CREATE USER MAPPING FOR postgres SERVER testserver OPTIONS (user 'admin', password 'postgres');
+	
+ CREATE SCHEMA cloudschema;
+ 
+ select * from pg_foreign_server;
+ select * from pg_user_mapping;
+ GRANT USAGE ON FOREIGN SERVER testserver TO admin;
+IMPORT FOREIGN SCHEMA public LIMIT TO (customer) FROM SERVER testserver INTO public;
